@@ -1,111 +1,115 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Camera Mode Options</title>
+{% extends 'base.html' %}
+
+{% block title %}Camera Mode · LAATTS{% endblock %}
+{% block header %}{% endblock %}  {# Hide the navbar here #}
+{% block content %}
+
+  <div class="camera-hero">
+    <div class="overlay"></div>
+    <div class="camera-content">
+      <h1 class="title">Choose Camera Mode</h1>
+      <p class="tagline">Select your training type to begin</p>
+      <div class="btn-group">
+        <button class="btn neon-btn" onclick="window.location.href='{{ url_for('feed') }}?mode=squats'">Squats</button>
+        <button class="btn neon-btn" onclick="window.location.href='{{ url_for('feed') }}?mode=skipping'">Skipping</button>
+        <button class="btn back-btn" onclick="window.location.href='{{ url_for('home') }}'">← Back to Home</button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block head_extra %}
   <style>
     body {
-      font-family: 'Arial', sans-serif;
       margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #001f3f, #0074d9);
-      color: white;
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    .camera-hero {
+      position: relative;
+      height: 100vh;
+      background: url('/static/images/camera-bg.jpg') center center/cover no-repeat;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-    }
-
-
-
-
-    .container {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 15px;
-      padding: 30px 50px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
       text-align: center;
-      width: 350px;
+    }
+    .camera-hero {
+      position: relative;
+      height: 100vh;
+      background: url('/static/images/camera-bg.jpg') center center/cover no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
 
 
-
-
-    h1 {
-      font-size: 1.8rem;
-      color: #fff;
-      margin-bottom: 25px;
+    .overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
     }
 
+    .camera-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      padding: 20px;
+    }
 
+    .title {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #f0f0d8;
+      margin-bottom: 15px;
+    }
 
+    .tagline {
+      font-size: 1.2rem;
+      color: #00ff80;
+      margin-bottom: 40px;
+      font-weight: 600;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
 
     .btn {
-      display: inline-block;
-      background: #2ecc40;
-      color: white;
-      padding: 15px 25px;
-      margin: 10px 5px;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      font-size: 1rem;
+      padding: 15px 40px;
+      border: 2px solid #00ff80;
+      border-radius: 30px;
+      background: transparent;
+      color: #00ff80;
+      font-size: 1.2rem;
       font-weight: bold;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
-
-
-
 
     .btn:hover {
-      background: #01ff70;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      background: #00ff80;
+      color: #000;
+      box-shadow: 0 0 15px #00ff80, 0 0 30px #00ff80;
+    }
+
+    .back-btn {
+      border-color: #888;
+      color: #888;
+    }
+
+    .back-btn:hover {
+      background: #888;
+      color: #000;
+      box-shadow: 0 0 15px #888;
     }
   </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Camera Mode</h1>
-    <button class="btn" onclick="window.location.href='feed?mode=squats'">Squats</button>
-    <button class="btn" onclick="window.location.href='feed?mode=skipping'">Skipping</button>
-    <button class="btn" onclick="window.location.href='/'">Back to Home</button>
-  </div>
-
-
-
-
-  <script>
-    async function navigateToFeed(mode) {
-      try {
-        const response = await fetch(`/start_mode?mode=${mode}`);
-        const data = await response.json();
-        if (response.ok) {
-          alert(`Mode: ${mode.toUpperCase()} started successfully.`);
-        } else {
-          alert(`Error: ${data.error || "Could not start the mode."}`);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        alert("Failed to communicate with the server.");
-      }
-    }
-   
-  function selectMode(mode) {
-    // Redirect to the appropriate feed page
-    window.location.href = mode + '.html';  // either squats.html or skipping.html
-  }
-  function navigateTo(mode) {
-    window.location.href = `/${mode}`;
-  }
-
-
-
-
-  </script>
-</body>
-</html>
+{% endblock %}

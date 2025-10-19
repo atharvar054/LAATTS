@@ -1,94 +1,155 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laser Control Panel</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% extends 'base.html' %}
+
+{% block title %}Laser Mode · LAATTS{% endblock %}
+
+{% block header %}{% endblock %}  {# Hides the navbar for this page #}
+
+{% block content %}
+  <div class="laser-hero">
+    <div class="overlay"></div>
+    <div class="laser-content">
+      <h1 class="title">Laser Control</h1>
+
+      <div class="control-panel">
+        <div class="btn-container">
+          <button id="startBtn" class="btn neon-btn" onclick="startLaser()">Start Laser</button>
+          <button id="stopBtn" class="btn red-btn" onclick="stopLaser()">Stop Laser</button>
+          <button class="btn back-btn" onclick="window.location.href='/'">← Back to Home</button>
+        </div>
+
+        <div class="status-container">
+          <div class="status-text">Status: <span id="statusText">Ready</span></div>
+          <div class="connection-status" id="connectionStatus">Checking connection...</div>
+        </div>
+      </div>
+
+      <div class="position-display">
+        <div>
+          <div>Current Pan</div>
+          <div class="position-value" id="currentPan">0°</div>
+        </div>
+        <div>
+          <div>Current Tilt</div>
+          <div class="position-value" id="currentTilt">0°</div>
+        </div>
+        <div>
+          <div>Target Pan</div>
+          <div class="position-value" id="targetPan">0°</div>
+        </div>
+        <div>
+          <div>Target Tilt</div>
+          <div class="position-value" id="targetTilt">0°</div>
+        </div>
+      </div>
+
+      <div class="graph-container">
+        <div class="graph-title">Laser Usage Duration</div>
+        <canvas id="durationChart"></canvas>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block head_extra %}
   <style>
     body {
-      font-family: 'Arial', sans-serif;
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    .laser-hero {
+      position: relative;
+      min-height: 100vh;
+      background: url('/static/images/laser-bg.jpg') center center/cover no-repeat;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #0074d9, #001f3f);
-      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .laser-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .title {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #f0f0d8;
+      margin-bottom: 25px;
     }
 
     .control-panel {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 255, 128, 0.3);
       border-radius: 15px;
       padding: 30px;
-      width: 350px;
-      text-align: center;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
       margin-bottom: 30px;
-    }
-
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 25px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      box-shadow: 0 0 15px rgba(0, 255, 128, 0.2);
     }
 
     .btn-container {
       display: flex;
       flex-direction: column;
       gap: 15px;
+      margin-bottom: 20px;
     }
 
     .btn {
       padding: 15px 25px;
-      border: none;
-      border-radius: 25px;
+      border: 2px solid #00ff80;
+      border-radius: 30px;
+      background: transparent;
+      color: #00ff80;
       font-size: 1rem;
-      color: white;
-      cursor: pointer;
-      transition: all 0.3s;
       font-weight: bold;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
     }
 
-    #startBtn {
-      background-color: #2ecc40;
+    .btn:hover {
+      background: #00ff80;
+      color: #000;
+      box-shadow: 0 0 15px #00ff80;
     }
 
-    #startBtn:hover {
-      background-color: #01ff70;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    .red-btn {
+      border-color: #ff4136;
+      color: #ff4136;
     }
-
-    #stopBtn {
-      background-color: #ff4136;
-      display: none;
-    }
-
-    #stopBtn:hover {
-      background-color: #ff851b;
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    .red-btn:hover {
+      background: #ff4136;
+      color: #000;
+      box-shadow: 0 0 15px #ff4136;
     }
 
     .back-btn {
-      background-color: #6c757d;
-      margin-top: 30px;
+      border-color: #888;
+      color: #888;
     }
-
     .back-btn:hover {
-      background-color: #5a6268;
+      background: #888;
+      color: #000;
+      box-shadow: 0 0 15px #888;
     }
 
     .status-container {
-      margin: 25px 0;
+      margin-top: 20px;
       padding: 15px;
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(0, 0, 0, 0.3);
       border-radius: 10px;
     }
 
@@ -99,356 +160,39 @@
 
     .connection-status {
       font-size: 0.9rem;
-      margin-top: 15px;
+      margin-top: 10px;
     }
 
-    .connected {
-      color: #01ff70;
-    }
-
-    .disconnected {
-      color: #ff4136;
-    }
-
-    .pending {
-      color: #ffcc00;
-    }
-
-    .graph-container {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 20px;
-      width: 80%;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .graph-title {
-      text-align: center;
-      margin-bottom: 15px;
-      font-size: 1.2rem;
-    }
-
-    canvas {
-      width: 100% !important;
-      height: 300px !important;
-    }
+    .connected { color: #00ff80; }
+    .disconnected { color: #ff4136; }
+    .pending { color: #ffcc00; }
 
     .position-display {
       margin: 20px auto;
       padding: 15px;
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(0, 0, 0, 0.3);
       border-radius: 10px;
       display: flex;
       justify-content: space-around;
-      width: 80%;
       max-width: 800px;
     }
+
     .position-value {
       font-size: 1.2rem;
       font-weight: bold;
     }
+
+    .graph-container {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+
+    .graph-title {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      color: #00ff80;
+    }
   </style>
-</head>
-<body>
-  <div class="control-panel">
-    <h1>Laser Control</h1>
-    
-    <div class="btn-container">
-      <button id="startBtn" class="btn" onclick="startLaser()">Start Laser</button>
-      <button id="stopBtn" class="btn" onclick="stopLaser()">Stop Laser</button>
-      <button class="btn back-btn" onclick="window.location.href='/'">Back to Home</button>
-    </div>
-
-    <div class="status-container">
-      <div class="status-text">Status: <span id="statusText">Ready</span></div>
-      <div class="connection-status" id="connectionStatus">Checking connection...</div>
-    </div>
-  </div>
-
-  <div class="position-display">
-    <div>
-      <div>Current Pan</div>
-      <div class="position-value" id="currentPan">0°</div>
-    </div>
-    <div>
-      <div>Current Tilt</div>
-      <div class="position-value" id="currentTilt">0°</div>
-    </div>
-    <div>
-      <div>Target Pan</div>
-      <div class="position-value" id="targetPan">0°</div>
-    </div>
-    <div>
-      <div>Target Tilt</div>
-      <div class="position-value" id="targetTilt">0°</div>
-    </div>
-  </div>
-
-  <div class="graph-container">
-    <div class="graph-title">Laser Usage Duration</div>
-    <canvas id="durationChart"></canvas>
-  </div>
-
-  <script>
-    // DOM Elements
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const statusText = document.getElementById('statusText');
-    const connectionStatus = document.getElementById('connectionStatus');
-
-    // Chart setup for Duration
-    const durationCtx = document.getElementById('durationChart').getContext('2d');
-    const durationChart = new Chart(durationCtx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Duration (seconds)',
-          data: [],
-          borderColor: '#01ff70',
-          backgroundColor: 'rgba(1, 255, 112, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Duration (seconds)',
-              color: '#ffffff'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            },
-            ticks: {
-              color: '#ffffff'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: 'Session End Time',
-              color: '#ffffff'
-            },
-            grid: {
-              color: 'rgba(255, 255, 255, 0.1)'
-            },
-            ticks: {
-              color: '#ffffff'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            labels: {
-              color: '#ffffff',
-              font: {
-                size: 14
-              }
-            }
-          }
-        }
-      }
-    });
-
-    // Laser session tracking
-    let isLaserActive = false;
-    let sessionStartTime = null;
-    let sessionHistory = [];
-    let currentPan = 0;
-    let currentTilt = 0;
-    let targetPan = 0;
-    let targetTilt = 0;
-    let positionThreshold = 5;
-    let connectionCheckInterval;
-
-    // Initialize
-    checkConnection();
-
-    function updateConnectionStatus(isConnected) {
-      if (isConnected) {
-        connectionStatus.textContent = isLaserActive ? "Connected - Laser active" : "Connected - Laser ready";
-        connectionStatus.className = "connection-status connected";
-      } else {
-        connectionStatus.textContent = "Not connected to laser device";
-        connectionStatus.className = "connection-status disconnected";
-      }
-    }
-
-    function checkConnection() {
-      fetch('/laser_status')
-        .then(response => {
-          if (!response.ok) throw new Error('Network error');
-          return response.json();
-        })
-        .then(data => {
-          if (data.status === "success") {
-            isLaserActive = data.active;
-            updateButtonStates();
-            updateConnectionStatus(true);
-          } else {
-            throw new Error(data.message || "Status check failed");
-          }
-        })
-        .catch(error => {
-          console.error('Connection check failed:', error);
-          updateConnectionStatus(false);
-        });
-    }
-
-    function updateButtonStates() {
-      if (isLaserActive) {
-        statusText.textContent = "Active";
-        startBtn.style.display = "none";
-        stopBtn.style.display = "block";
-      } else {
-        statusText.textContent = "Ready";
-        startBtn.style.display = "block";
-        stopBtn.style.display = "none";
-      }
-    }
-
-    function startLaser() {
-      connectionStatus.textContent = "Activating laser...";
-      connectionStatus.className = "connection-status pending";
-      
-      fetch('/start_laser')
-        .then(response => {
-          if (!response.ok) throw new Error('Network error');
-          return response.json();
-        })
-        .then(data => {
-          if (data.status === "success") {
-            isLaserActive = true;
-            sessionStartTime = new Date();
-            updateButtonStates();
-            updateConnectionStatus(true);
-            
-            // Set initial target position
-            targetPan = Math.floor(Math.random() * 181);
-            targetTilt = Math.floor(Math.random() * 91);
-            updatePositionDisplay();
-            
-            // Start checking position
-            checkPositionMovement();
-          } else {
-            throw new Error(data.message || "Activation failed");
-          }
-        })
-        .catch(error => {
-          console.error('Start failed:', error);
-          statusText.textContent = "Error";
-          connectionStatus.textContent = error.message;
-          connectionStatus.className = "connection-status disconnected";
-          checkConnection();
-        });
-    }
-
-    function checkPositionMovement() {
-      // In a real implementation, this would get actual data from the ESP32
-      // For now, we'll simulate movement toward the target
-      
-      // Simulate movement (5 degrees per check)
-      if (Math.abs(currentPan - targetPan) > positionThreshold) {
-        currentPan += (currentPan < targetPan) ? 5 : -5;
-      }
-      
-      if (Math.abs(currentTilt - targetTilt) > positionThreshold) {
-        currentTilt += (currentTilt < targetTilt) ? 5 : -5;
-      }
-      
-      updatePositionDisplay();
-      
-      // Check if we've reached the target position (within threshold)
-      const panReached = Math.abs(currentPan - targetPan) <= positionThreshold;
-      const tiltReached = Math.abs(currentTilt - targetTilt) <= positionThreshold;
-      
-      if (panReached && tiltReached && isLaserActive) {
-        // Set new target position
-        targetPan = Math.floor(Math.random() * 181);
-        targetTilt = Math.floor(Math.random() * 91);
-        setTimeout(checkPositionMovement, 1000);
-      } else if (isLaserActive) {
-        // Continue checking position
-        setTimeout(checkPositionMovement, 200);
-      }
-    }
-
-    function stopLaser() {
-      connectionStatus.textContent = "Deactivating laser...";
-      connectionStatus.className = "connection-status pending";
-      
-      fetch('/stop_laser')
-        .then(response => {
-          if (!response.ok) throw new Error('Network error');
-          return response.json();
-        })
-        .then(data => {
-          if (data.status === "success") {
-            isLaserActive = false;
-            const sessionEndTime = new Date();
-            const duration = (sessionEndTime - sessionStartTime) / 1000;
-            
-            // Add to session history
-            const timeString = sessionEndTime.toLocaleTimeString();
-            sessionHistory.push({
-              startTime: sessionStartTime,
-              endTime: sessionEndTime,
-              time: timeString,
-              duration: duration
-            });
-            
-            // Update chart (keep last 10 sessions)
-            if (sessionHistory.length > 10) {
-              sessionHistory.shift();
-            }
-            
-            updateDurationChart();
-            updateButtonStates();
-            updateConnectionStatus(true);
-          } else {
-            throw new Error(data.message || "Deactivation failed");
-          }
-        })
-        .catch(error => {
-          console.error('Stop failed:', error);
-          statusText.textContent = "Error";
-          connectionStatus.textContent = error.message;
-          connectionStatus.className = "connection-status disconnected";
-          checkConnection();
-        });
-    }
-
-    function updateDurationChart() {
-      const durationLabels = sessionHistory.map(session => session.time);
-      const durationData = sessionHistory.map(session => session.duration);
-      
-      durationChart.data.labels = durationLabels;
-      durationChart.data.datasets[0].data = durationData;
-      durationChart.update();
-    }
-
-    function updatePositionDisplay() {
-      document.getElementById('currentPan').textContent = `${currentPan}°`;
-      document.getElementById('currentTilt').textContent = `${currentTilt}°`;
-      document.getElementById('targetPan').textContent = `${targetPan}°`;
-      document.getElementById('targetTilt').textContent = `${targetTilt}°`;
-    }
-
-    // Setup periodic connection check (every 5 seconds)
-    connectionCheckInterval = setInterval(checkConnection, 5000);
-
-    // Clean up on page exit
-    window.addEventListener('beforeunload', function() {
-      clearInterval(connectionCheckInterval);
-    });
-  </script>
-</body>
-</html>
+{% endblock %}

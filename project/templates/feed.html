@@ -1,118 +1,309 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Feed</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #001f3f, #0074d9);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
+{% extends 'base.html' %}
 
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            width: 80%;
-            max-width: 800px;
-        }
+{% block title %}{{ mode.capitalize() }} Mode · LAATTS{% endblock %}
 
-        h1 {
-            font-size: 1.8rem;
-            color: #fff;
-            margin-bottom: 25px;
-            font-family: 'Montserrat', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
+{% block header %}{% endblock %}  {# Hide navbar #}
 
-        #videoFeed {
-            width: 100%;
-            max-width: 640px;
-            border-radius: 10px;
-            margin: 20px 0;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        #count {
-            font-size: 2rem;
-            font-weight: bold;
-            margin: 20px 0;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            display: inline-block;
-        }
-
-        .btn {
-            display: inline-block;
-            background: #ff4136;
-            color: white;
-            padding: 15px 25px;
-            margin: 10px 5px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
-        }
-
-        .btn:hover {
-            background: #ff851b;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ mode.capitalize() }} Mode</h1>
-        <img id="videoFeed" src="">
-        <div id="count">Count: 0</div>
-        <button class="btn" onclick="stopFeed()">Stop</button>
+{% block content %}
+  <div class="feed-wrapper">
+    <!-- Scoreboard -->
+    <div class="scoreboard">
+      <h2>Session Scoreboard</h2>
+      <div class="score-stats">
+        <div class="stat">
+          <span>MODE</span>
+          <div class="value">{{ mode.capitalize() }}</div>
+        </div>
+        <div class="stat">
+          <span>TOTAL REPS</span>
+          <div class="value" id="repCount">0</div>
+        </div>
+        <div class="stat">
+          <span>TIME ELAPSED</span>
+          <div class="value" id="timeElapsed">00:00</div>
+        </div>
+      </div>
+      <div class="score-actions">
+        <button class="btn start-btn" onclick="startSession()">Start</button>
+        <button class="btn reset-btn" onclick="resetSession()">Reset</button>
+      </div>
+      <button class="btn back-btn" onclick="stopFeed()">← Change Mode</button>
     </div>
 
-    <script>
-        const socket = io();
-        const mode = '{{ mode }}';
-        
-        window.onload = function() {
-            fetch(`/start_mode?mode=${mode}`);
-        };
+    <!-- Camera Feed / Graph -->
+    <div class="feed-content">
+      <h1>{{ mode.capitalize() }} Training</h1>
 
-        socket.on('video_feed', function(data) {
-            document.getElementById('videoFeed').src = 'data:image/jpeg;base64,' + data.image;
-            if (data.count !== undefined) {
-                document.getElementById('count').textContent = 'Count: ' + data.count;
-            }
-        });
+      <!-- Live Feed -->
+      <div id="liveFeed">
+        <img id="videoFeed" src="">
+        <div id="countDisplay">Count: 0</div>
+      </div>
 
-        function stopFeed() {
-            fetch('/stop_mode').then(() => {
-                window.location.href = '/camera';
-            });
+      <!-- Graph -->
+      <div id="results" style="display:none; margin-top:20px;">
+        <h3>Time Between Reps</h3>
+        <canvas id="repChart"></canvas>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block head_extra %}
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+
+    .feed-wrapper {
+      display: flex;
+      gap: 30px;
+      padding: 30px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .scoreboard {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 255, 128, 0.3);
+      border-radius: 15px;
+      padding: 20px;
+      width: 280px;
+      box-shadow: 0 0 15px rgba(0, 255, 128, 0.2);
+      text-align: center;
+    }
+
+    .scoreboard h2 {
+      margin-bottom: 20px;
+      color: #00ff80;
+      font-size: 1.4rem;
+    }
+
+    .score-stats {
+      display: grid;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat span {
+      font-size: 0.8rem;
+      color: #ccc;
+      display: block;
+    }
+
+    .stat .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .score-actions {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 15px;
+    }
+
+    .feed-content {
+      flex: 1;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    #videoFeed {
+      width: 100%;
+      max-width: 640px;
+      border-radius: 10px;
+      margin: 20px 0;
+      box-shadow: 0 0 15px rgba(0, 255, 128, 0.3);
+    }
+
+    #countDisplay {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #00ff80;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 25px;
+      border: 2px solid transparent;
+      font-size: 0.9rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .start-btn {
+      border-color: #00ff80;
+      color: #00ff80;
+      background: transparent;
+    }
+    .start-btn:hover {
+      background: #00ff80;
+      color: #000;
+    }
+
+    .reset-btn {
+      border-color: #ffcc00;
+      color: #ffcc00;
+      background: transparent;
+    }
+    .reset-btn:hover {
+      background: #ffcc00;
+      color: #000;
+    }
+
+    .back-btn {
+      margin-top: 10px;
+      border-color: #888;
+      color: #888;
+      background: transparent;
+    }
+    .back-btn:hover {
+      background: #888;
+      color: #000;
+    }
+
+    #results {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 15px;
+    }
+  </style>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const socket = io();
+    const mode = '{{ mode }}';
+
+    let repCount = 0;
+    let startTime = null;
+    let timerInterval = null;
+    let lastRepTime = null;
+    let repIntervals = [];
+
+    function startSession() {
+      repCount = 0;
+      repIntervals = [];
+      lastRepTime = null;
+      document.getElementById("repCount").textContent = repCount;
+      document.getElementById("countDisplay").textContent = "Count: 0";
+      document.getElementById("results").style.display = "none";
+      document.getElementById("liveFeed").style.display = "block";
+      startTime = new Date();
+      timerInterval = setInterval(updateTimer, 1000);
+      fetch(`/start_mode?mode=${mode}`);
+    }
+
+    function resetSession() {
+      clearInterval(timerInterval);
+
+      // Keep elapsed time, reset reps for scoreboard
+      document.getElementById("repCount").textContent = 0;
+      document.getElementById("countDisplay").textContent = "Count: 0";
+
+      // Hide camera feed, show graph
+      document.getElementById("liveFeed").style.display = "none";
+      document.getElementById("results").style.display = "block";
+
+      renderChart();
+    }
+
+    function updateTimer() {
+      if (!startTime) return;
+      const elapsed = Math.floor((new Date() - startTime) / 1000);
+      const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const seconds = String(elapsed % 60).padStart(2, '0');
+      document.getElementById("timeElapsed").textContent = `${minutes}:${seconds}`;
+    }
+
+    socket.on('video_feed', function(data) {
+      document.getElementById('videoFeed').src = 'data:image/jpeg;base64,' + data.image;
+
+      if (data.count !== undefined && data.count > repCount) {
+        repCount = data.count;
+        document.getElementById("repCount").textContent = repCount;
+        document.getElementById("countDisplay").textContent = "Count: " + repCount;
+
+        const now = new Date();
+        if (lastRepTime) {
+          const diff = (now - lastRepTime) / 1000; // seconds
+          repIntervals.push(diff);
         }
+        lastRepTime = now;
+      }
+    });
 
-        window.onbeforeunload = function() {
-            fetch('/stop_mode');
-        };
-    </script>
-</body>
-</html>
+    function stopFeed() {
+      fetch('/stop_mode').then(() => {
+        window.location.href = '/camera';
+      });
+    }
+
+    window.onbeforeunload = function() {
+      fetch('/stop_mode');
+    };
+
+    function renderChart() {
+    const ctx = document.getElementById("repChart").getContext("2d");
+    const labels = repIntervals.map((_, i) => i + 1); // Rep numbers on X-axis
+    const data = repIntervals; // Time between reps on Y-axis
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+        labels: labels,
+        datasets: [{
+            label: 'Time Between Reps (seconds)',
+            data: data,
+            borderColor: '#00ff80',
+            backgroundColor: 'rgba(0, 255, 128, 0.1)',
+            borderWidth: 2,
+            tension: 0.3,
+            pointBackgroundColor: '#00ff80',
+            pointBorderColor: '#fff',
+            pointRadius: 5,
+            pointHoverRadius: 7
+        }]
+        },
+        options: {
+        responsive: true,
+        scales: {
+            y: {
+            beginAtZero: true,
+            title: {
+                display: true,
+                text: "Seconds",
+                color: "#fff"
+            },
+            ticks: { color: '#fff' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+            },
+            x: {
+            title: {
+                display: true,
+                text: "Rep Count",
+                color: "#fff"
+            },
+            ticks: { color: '#fff' },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+            }
+        },
+        plugins: {
+            legend: { labels: { color: '#fff' } }
+        }
+        }
+    });
+    }
+
+  </script>
+{% endblock %}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Fitness Vision{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  {% block head_extra %}{% endblock %}
+  <style>
+    /* === HEADER STYLING === */
+    .site-header {
+      background: rgba(0, 0, 0, 0.85);
+      color: #00ff80;
+      padding: 15px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+      border-bottom: 1px solid #00ff80;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      position: relative;
+    }
+
+    .menu-icon {
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .menu-icon div {
+      width: 24px;
+      height: 2px;
+      background: #00ff80;
+    }
+
+    .header-text {
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .header-center {
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .header-right .login-btn {
+      border: 1px solid #00ff80;
+      background: transparent;
+      color: #00ff80;
+      padding: 8px 18px;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .header-right .login-btn:hover {
+      background: #00ff80;
+      color: #000;
+      box-shadow: 0 0 10px #00ff80;
+    }
+
+    .header-right .login-btn i {
+      font-style: normal;
+    }
+
+    /* Dropdown Menu */
+    .dropdown {
+      position: absolute;
+      top: 50px;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid #00ff80;
+      border-radius: 6px;
+      display: none;
+      flex-direction: column;
+      min-width: 150px;
+      z-index: 2000;
+    }
+
+    .dropdown a {
+      padding: 12px 15px;
+      color: #00ff80;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.3s ease;
+    }
+
+    .dropdown a:hover {
+      background: #00ff80;
+      color: #000;
+    }
+
+    /* Add spacing for fixed header */
+    body {
+      padding-top: 70px;
+    }
+  </style>
+</head>
+<body>
+  {% block header %}
+    <header class="site-header">
+      <div class="header-left">
+        <div class="menu-icon" onclick="toggleMenu()">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <span class="header-text" onclick="toggleMenu()">Menu</span>
+
+        <!-- Dropdown -->
+        <div class="dropdown" id="dropdownMenu">
+          <a href="#" onclick="alert('Login clicked')">Login</a>
+          <a href="#">About</a>
+        </div>
+      </div>
+
+      <div class="header-center">
+        M
+      </div>
+
+      <div class="header-right">
+        <button class="login-btn" onclick="alert('Login clicked')">
+          Login <i>👤</i>
+        </button>
+      </div>
+    </header>
+  {% endblock %}
+
+
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>© {{ 2025 }} Fitness Vision</span>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+
+  <script>
+    function toggleMenu() {
+      const dropdown = document.getElementById('dropdownMenu');
+      dropdown.style.display = dropdown.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    // Hide dropdown when clicking outside
+    window.addEventListener('click', function(e) {
+      const menu = document.querySelector('.header-left');
+      const dropdown = document.getElementById('dropdownMenu');
+      if (!menu.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -2,13 +2,12 @@ import mediapipe as mp
 import cv2
 import numpy as np
 import pygame
-from pathlib import Path
 
 # Initialize pygame mixer for sound playback
 pygame.mixer.init()
 
 # Load the sound file using pygame
-sound_file = str((Path(__file__).parent / "ding.wav"))
+sound_file = 'C:/Users/nilesh/Desktop/project/ding.wav'
 try:
     sound = pygame.mixer.Sound(sound_file)
 except pygame.error as e:
@@ -49,7 +48,7 @@ def legState(angle):
         return 3  # Upright range
 
 
-if __name__ == "__main__":
+if __name__ == "_main_":
     # Init mediapipe drawing and pose
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
